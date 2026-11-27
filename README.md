@@ -21,9 +21,9 @@
    ```bash
    git clone https://github.com/Zzzia/PaseoAgent.git
    ```
-2. 在本目录启动一个自然语言沟通能力强的模型作为个人助理，**先指定好你打算分配给 `Linguist`、`Builder`、`Grandmaster` 的三个模型**，直接把下面这句话发给 AI，让它阅读 [INSTALL.md](INSTALL.md) 自动帮你开启 Paseo Tools 并配置好三类 Profile：
+2. 在本目录启动一个自然语言沟通能力强的模型作为个人助理，**先指定好你打算分配给 `Linguist`、`Builder`、`Grandmaster` 的三个模型**，直接把下面这句话发给 AI，让它阅读 [INSTALL.md](INSTALL.md) 自动帮你开启 Paseo Tools、确认 `paseo` / `paseo-help` 技能并配置好三类 Profile：
 
-   > 请阅读 [INSTALL.md](INSTALL.md)，帮我完成本机的 Paseo 初始化配置（开启 Paseo Tools 并配置三个执行 Profile）。我指定的三类模型如下：
+   > 请阅读 [INSTALL.md](INSTALL.md)，帮我完成本机的 Paseo 初始化配置（开启 Paseo Tools、确认 `paseo` 与 `paseo-help` 技能已启用，并配置三个执行 Profile）。我指定的三类模型如下：
    > - `Linguist`：<填你选的强语言/大上下文模型，例如 `antigravity/gemini-4-neon`>
    > - `Builder`：<填你选的强编程主力模型，例如 `opencode/openai/gpt-6.2-sol-fast`>
    > - `Grandmaster`：<填你选的深度推理旗舰模型，例如 `opencode/openai/gpt-6.2-astra-fast`>

@@ -22,9 +22,11 @@
 paseo daemon status --json
 ```
 
-## 3. 自动开启 Paseo Tools 开关
+## 3. 开启 Paseo Tools 并确认 `paseo` / `paseo-help` 技能已启用
 
-必须开启 `daemon.mcp.injectIntoAgents`，个人助理才能加载 Paseo MCP 工具与技能：
+### 3.1 开启 Paseo Tools（MCP 工具注入）
+
+必须开启 `daemon.mcp.injectIntoAgents`，个人助理才能调用 Paseo MCP 工具（此开关仅控制 MCP 工具注入，不会强制开启全部内置 Skill）：
 
 ```bash
 paseo daemon config set daemon.mcp.injectIntoAgents true --json
@@ -32,6 +34,23 @@ paseo daemon config set daemon.mcp.injectIntoAgents true --json
 
 - 该命令会自动校验、保存并触发热重载，**无需重启 daemon**。
 - **生效说明**：新启动的 Agent 会直接带入 Paseo Tools；已启动的旧 Agent 不会当场获得新工具，需新开会话或在空闲时经用户同意执行 `paseo agent reload <agentId>`（仅重载该单个 Agent，不重启 daemon）。
+
+### 3.2 检查并确保 `paseo` 与 `paseo-help` 技能可用（不强开全部 Skill）
+
+Paseo 的内置技能开关独立于 MCP 工具，由 `agents.skills.selection` 控制（仅支持 `{ "mode": "all" }` 或 `{ "mode": "custom", "skills": [...] }`，未配置等同于 `all`，全不选为空数组 `[]`）。**不需要也不应该强迫用户开启全部内置技能**，只需确保 `paseo` 和 `paseo-help` 两项已启用并实际安装：
+
+1. 先查看当前选择，并核对目标 Provider 的技能目录中 `paseo/SKILL.md` 与 `paseo-help/SKILL.md` 是否已安装可读：
+   ```bash
+   paseo daemon config get agents.skills.selection --json
+   ```
+2. 按当前状态分情况安全处理：
+   - **已选中且两项 `SKILL.md` 均已安装可读**：无需任何改动；
+   - **`mode: "custom"` 且缺少 `paseo` 或 `paseo-help`**：保留用户原有 `skills` 列表，仅追加缺失的项后热写入（例如原本为空数组时变为仅含这两项）：
+     ```bash
+     paseo daemon config set agents.skills.selection '{"mode":"custom","skills":["paseo","paseo-help"]}' --json
+     ```
+   - **未配置（`set: false`）或 `mode: "all"`，但两项技能尚未安装落盘**：不要自动替用户同步整套内置技能，先请用户确认是改为仅安装 `paseo` 与 `paseo-help`（推荐），还是按默认全选安装。
+3. **确保技能文件实际安装**：`paseo daemon config set agents.skills.selection` 只更新选中配置，**不会顺带安装技能文件**。若检查发现 `paseo` 或 `paseo-help` 的 `SKILL.md` 尚未落盘到目标 Provider 的技能目录，需通过 Paseo 的 **Settings → Host → Tools & prompts → Paseo skills**（或同款技能同步接口）执行安装（如提示存在待确认的删除项，不要自动确认），安装后新开 Agent 或空闲重载即可发现。
 
 ## 4. 自动配置三类 Agent Profiles
 
@@ -95,11 +114,12 @@ paseo daemon config set daemon.agentProfiles '<合并后的完整 JSON 数组>' 
 
 ## 5. 核验配置生效
 
-配置完成后执行只读核验，确认 `injectIntoAgents` 为 `true` 且三个 Profile 均已热生效：
+配置完成后执行只读核验，确认 `injectIntoAgents` 为 `true`、`paseo` 与 `paseo-help` 技能已启用且 `SKILL.md` 可读、三个 Profile 均已热生效：
 
 ```bash
 paseo daemon config get daemon.mcp.injectIntoAgents --json
+paseo daemon config get agents.skills.selection --json
 paseo daemon config get daemon.agentProfiles --json
 ```
 
-若当前会话已具备 Paseo MCP 工具，也可直接调用 `list_profiles` 确认三个 Profile 及其 `notes` 已被运行时正常读出。完成后告知用户结果（若旧会话需要立即获得 Paseo Tools，提醒用户新开会话或重载该 Agent）。
+若当前会话已具备 Paseo MCP 工具，也可直接调用 `list_profiles` 确认三个 Profile 及其 `notes` 已被运行时正常读出。完成后告知用户结果（若旧会话需要立即获得 Paseo Tools 或新安装的技能，提醒用户新开会话或重载该 Agent）。
