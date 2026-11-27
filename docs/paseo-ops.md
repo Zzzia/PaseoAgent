@@ -69,9 +69,9 @@ Paseo 推送的执行 Agent 消息与完成通知会以系统包裹形式进入�
    - Paseo 的 `create_agent` 不支持传裸 `cwd`，必须归属某个 Workspace；往已有 `workspaceId` 创建 Agent 会直接在该工作区下开新标签页，不会新增 Workspace。
    - **严禁省略 `workspaceId` 或把执行 Agent 建在本助理工作区（`$PASEO_WORKSPACE_ID`）**：执行 Agent 落在本目录会误读个人助理守则，把自己也当成个人助理并再次套娃派子 Agent。
    - **定位目标工程与选区规则**：先调用 `list_workspaces`（跨主机先 `list_hosts` 取 `serverId`），必要时结合近期 `list_agents`（看标题和 `cwd`）及常见代码根目录的一步轻量只读查看：
-     1. **需求针对已有项目（涉及项目代码、排查或文件变更）**：先主动定位目标项目并复用其**已有的 `workspaceId`**（若在 `list_agents` 中发现该项目刚做一半的相关执行 Agent，可优先接管）；若未命中或有多个相似候选，**不要默默回落到 `~` 盲跑**，直接列出最可能的候选（或说明未查到）请用户给出具体工作目录后再派活；
-     2. **需求不绑定具体项目、也不涉及项目文件变更**（如通用调研、资料分析、跨机运维等）：不需要向用户要目录，直接复用**用户主目录（`~`）或通用目录已有的 `workspaceId`**；
-     3. **禁止随手新建 Workspace**：仅在确认目标目录（或用户主目录）在对应主机上完全没有任何已有 workspace，或用户明确要求新开独立 worktree 分支时，才允许调用 `create_workspace`。
+     1. **需求针对已有项目（涉及项目代码、排查或文件变更）**：先主动定位目标项目并复用其**已有的 `workspaceId`**（若在 `list_agents` 中发现该项目刚做一半的相关执行 Agent，可优先接管）；若未命中或有多个相似候选，**不要默默回落到通用工作区盲跑**，直接列出最可能的候选（或说明未查到）请用户给出具体工作目录后再派活；
+     2. **需求不绑定具体项目、也不涉及项目文件变更**（如通用调研、资料分析、跨机运维等）：不需要向用户要目录，直接复用独立隐藏目录 **`~/.paseoagent/workspace`** 对应的通用工作区 `workspaceId`（位于 `PaseoAgent` 仓库树之外，既不污染 `~` 根目录、不混入 `~/.paseo` 状态目录，也能彻底避免 OpenCode / Claude Code 等 Provider 沿父目录向上加载 `PaseoAgent/AGENTS.md` 导致套娃；切勿在 `PaseoAgent` 内部建子目录作兜底）；
+     3. **禁止随手新建 Workspace**：仅在确认目标工程目录（或 `~/.paseoagent/workspace`）在对应主机上完全没有任何已有 workspace，或用户明确要求新开独立 worktree 分支时，才允许调用 `create_workspace`。
    - 涉及变更的工程、脚本、SSH、跨机运维等操作不要由个人助理代劳；但**一步到位、无副作用的轻量只读查询**（如单条 `git status`/`diff`/`log`、`gh repo view`、查单个配置或状态）以及基于已有上下文的**轻量纯文本梳理与产出**（如直接编写/修订 Prompt、Skill、规则、文案）由个人助理自己完成，避免为轻查询或纯文案转手外包造成上下文折损，只有涉及**变更落地、大量阅读、批量处理或并行提速**时再派执行 Agent。
 2. **加载 Paseo Profile 并按三类角色选型**：
    - 新建执行 Agent 前，**先调用 `list_profiles` 读取用户的最新配置与 `notes`**。`create_agent` 没有单独的 `profile` 字段，需把选中 Profile 的字段原样映射进去：
@@ -91,7 +91,7 @@ Paseo 推送的执行 Agent 消息与完成通知会以系统包裹形式进入�
 {
   "title": "<简短明确的任务标题>",
   "provider": "<profile.provider>/<profile.model>",
-  "workspaceId": "<必填：复用的目标仓库或用户主目录已有 workspaceId，严禁省略>",
+  "workspaceId": "<必填：复用的目标仓库或通用兜底工作区（~/.paseoagent/workspace）已有 workspaceId，严禁省略>",
   "notifyOnFinish": true,
   "settings": {
     "modeId": "<profile.modeId，纯调研/规划可改用 plan>",

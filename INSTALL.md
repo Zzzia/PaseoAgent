@@ -128,9 +128,9 @@ paseo daemon config get daemon.agentProfiles --json
 
 配置生效后，不要只停在“已完成”的文字提示上——接着帮用户在 Paseo 里准备好直接可用的个人助理入口，让用户一眼就能开始对话：
 
-### 6.1 复用或创建 `PaseoAgent` 本地工作区
+### 6.1 复用或创建个人助理工作区与通用兜底工作区
 
-`create` 命令不会按路径去重，因此必须先查再建。先列出已有工作区，按 `cwd` 精确匹配用户 clone 后的 `PaseoAgent` 绝对路径：
+`create` 命令不会按路径去重，因此必须先查再建。先列出已有工作区，按 `cwd` 精确匹配路径：
 
 ```bash
 paseo workspace ls --background --json
@@ -138,16 +138,23 @@ paseo workspace ls --background --json
 
 （若通过 Paseo MCP，调用 `list_workspaces({ includeBackground: true })`。）
 
-- **已有同路径的活跃可见 `local` 工作区**：直接复用其 `workspaceId`，不重复新建（若只存在后台工作区，不要把它当成不存在，应明确复用或请用户确认）；
-- **不存在匹配项时**：创建本地工作区（Paseo 会自动复用或创建对应 Project，无需先执行 `project create`）：
-  ```bash
-  paseo workspace create --isolation local --path "<repo-abs-path>" --title "PaseoAgent · 个人助理" --no-background --json
-  ```
-  （若通过 Paseo MCP，调用 `create_workspace({ isolation: "local", path: "<repo-abs-path>", title: "PaseoAgent · 个人助理", background: false })`。）
+需要准备好以下两个 `local` 工作区（Paseo 会自动复用或创建对应 Project，无需先执行 `project create`；若同路径已有活跃可见 `local` 工作区直接复用，不重复新建；若只存在后台工作区，不要把它当成不存在）：
 
-### 6.2 置顶该工作区
+1. **个人助理工作区（`<repo-abs-path>`）**：用于运行个人助理：
+   ```bash
+   paseo workspace create --isolation local --path "<repo-abs-path>" --title "PaseoAgent · 个人助理" --no-background --json
+   ```
+   （若通过 Paseo MCP，调用 `create_workspace({ isolation: "local", path: "<repo-abs-path>", title: "PaseoAgent · 个人助理", background: false })`。）
+2. **通用兜底工作区（`~/.paseoagent/workspace`）**：专门承接不绑定具体项目的通用调研与跨机运维任务（无需置顶）。该目录必须位于 `PaseoAgent` 仓库树之外（不要放在 `PaseoAgent` 内部子目录，否则 OpenCode / Claude Code 等 Provider 仍会沿祖先目录加载 `PaseoAgent/AGENTS.md` 导致套娃；也不要建指向仓库的软链接或混入 `~/.paseo` 状态目录），同时避免把临时文件散落在 `~` 根目录：
+   ```bash
+   mkdir -p "$HOME/.paseoagent/workspace"
+   paseo workspace create --isolation local --path "$HOME/.paseoagent/workspace" --title "PaseoAgent · 通用工作区" --no-background --json
+   ```
+   （若通过 Paseo MCP，确认目录存在后调用 `create_workspace({ isolation: "local", path: "<HOME>/.paseoagent/workspace", title: "PaseoAgent · 通用工作区", background: false })`。）
 
-Paseo 支持将 workspace 置顶（daemon 持久化 `pinnedAt`），但目前仅提供 SDK/WebSocket 接口，CLI 与 Paseo MCP 尚无置顶命令：
+### 6.2 置顶个人助理工作区
+
+Paseo 支持将 workspace 置顶（daemon 持久化 `pinnedAt`），但目前仅提供 SDK/WebSocket 接口，CLI 与 Paseo MCP 尚无置顶命令（通用兜底工作区无需置顶，仅置顶个人助理工作区即可）：
 
 - **可调用 `@getpaseo/client` SDK 时**：直接执行 `await workspace.setPinned(true)`（对应 WebSocket `workspace.pin.set.request`）完成置顶；
 - **仅使用 CLI 或 MCP 时**：使用清晰的标题（如 `PaseoAgent · 个人助理`），并在最终汇报中提醒用户在 Paseo 侧栏右键该工作区点击 **Pin workspace** 置顶。
