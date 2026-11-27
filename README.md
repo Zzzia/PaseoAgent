@@ -17,18 +17,18 @@
 
 ## 快速开始（交给 AI 自动配置）
 
-1. 克隆仓库并作为 Project 加入 Paseo：
+1. 克隆仓库到本地：
    ```bash
    git clone https://github.com/Zzzia/PaseoAgent.git
    ```
-2. 在本目录启动一个自然语言沟通能力强的模型作为个人助理，**先指定好你打算分配给 `Linguist`、`Builder`、`Grandmaster` 的三个模型**，直接把下面这句话发给 AI，让它阅读 [INSTALL.md](INSTALL.md) 自动帮你开启 Paseo Tools、确认 `paseo` / `paseo-help` 技能并配置好三类 Profile：
+2. 在你常用的任意 AI 会话（Paseo 内或外部终端均可）中，**先指定好分配给 `Linguist`、`Builder`、`Grandmaster` 的三个模型**（个人助理默认使用 `Linguist` 模型），把下面这段话发给 AI，让它阅读 [INSTALL.md](INSTALL.md) 全自动完成配置并为你建好工作区与助理标签页：
 
-   > 请阅读 [INSTALL.md](INSTALL.md)，帮我完成本机的 Paseo 初始化配置（开启 Paseo Tools、确认 `paseo` 与 `paseo-help` 技能已启用，并配置三个执行 Profile）。我指定的三类模型如下：
+   > 请阅读 `<你的 PaseoAgent 本地路径>/INSTALL.md`，帮我完成本机的 Paseo 初始化配置（开启 Paseo Tools、确认 `paseo` 与 `paseo-help` 技能、配置三个执行 Profile，并在 Paseo 中为本仓库建好置顶工作区和“个人助理”标签页）。我指定的三类模型如下（个人助理默认使用 `Linguist` 模型）：
    > - `Linguist`：<填你选的强语言/大上下文模型，例如 `antigravity/gemini-4-neon`>
    > - `Builder`：<填你选的强编程主力模型，例如 `opencode/openai/gpt-6.2-sol-fast`>
    > - `Grandmaster`：<填你选的深度推理旗舰模型，例如 `opencode/openai/gpt-6.2-astra-fast`>
 
-3. 配置完成后即可直接对话使用：直接向个人助理提需求，或把 Paseo 里已有执行 Agent 的 `agentId` 发给它接管。多助理可同时运行，各自按 1 对 N 管控自己的执行 Agent，互不干扰，不污染 Paseo 标签。
+3. 配置完成后，AI 会自动帮你打开（或指引你进入）Paseo 里名为 **`PaseoAgent · 个人助理`** 的工作区与 **`个人助理`** 标签页（如未自动置顶，按提示在侧栏置顶即可）。直接在这个标签页里提需求，或把 Paseo 里已有执行 Agent 的 `agentId` 发给它接管，即可开始使用。多助理可同时运行，各自按 1 对 N 管控自己的执行 Agent，互不干扰，不污染 Paseo 标签。
 
 ## 文档索引
 

@@ -1,10 +1,10 @@
 # PaseoAgent 安装与自动配置手册（面向 AI）
 
-本文档专门写给负责帮助用户初始化的 AI 阅读，用于通过 Paseo 官方机制**自动开启 Paseo Tools 并配置 `Linguist` / `Builder` / `Grandmaster` 三类执行 Profile**。整个过程均支持热更新，**无需重启正在运行的 Paseo daemon**。
+本文档专门写给负责帮助用户初始化的 AI 阅读，用于通过 Paseo 官方机制**自动开启 Paseo Tools、确认必需技能、配置 `Linguist` / `Builder` / `Grandmaster` 三类执行 Profile，并在 Paseo 中为本仓库准备好置顶工作区与“个人助理”标签页**。整个配置过程均支持热更新，**无需重启正在运行的 Paseo daemon**。
 
 ## 1. 配置前确认：先由用户指定三类模型
 
-在写入配置前，确保用户已经明确指定了三类角色各自使用的模型（如果用户尚未指定，先查询本机可用 Provider 与模型列表，请用户确认后再动手配置，不要替用户擅自决定）：
+在写入配置前，确保用户已经明确指定了三类角色各自使用的模型（个人助理本身默认使用 `Linguist` 模型，除非用户另行指定；如果用户尚未指定，先查询本机可用 Provider 与模型列表，请用户确认后再动手配置，不要替用户擅自决定）：
 
 | Profile 名称 | 角色定位与明确短板 | 参考配置举例 |
 |---|---|---|
@@ -122,4 +122,67 @@ paseo daemon config get agents.skills.selection --json
 paseo daemon config get daemon.agentProfiles --json
 ```
 
-若当前会话已具备 Paseo MCP 工具，也可直接调用 `list_profiles` 确认三个 Profile 及其 `notes` 已被运行时正常读出。完成后告知用户结果（若旧会话需要立即获得 Paseo Tools 或新安装的技能，提醒用户新开会话或重载该 Agent）。
+若当前会话已具备 Paseo MCP 工具，也可直接调用 `list_profiles` 确认三个 Profile 及其 `notes` 已被运行时正常读出。
+
+## 6. 落位工作区、创建个人助理标签并打开对话
+
+配置生效后，不要只停在“已完成”的文字提示上——接着帮用户在 Paseo 里准备好直接可用的个人助理入口，让用户一眼就能开始对话：
+
+### 6.1 复用或创建 `PaseoAgent` 本地工作区
+
+`create` 命令不会按路径去重，因此必须先查再建。先列出已有工作区，按 `cwd` 精确匹配用户 clone 后的 `PaseoAgent` 绝对路径：
+
+```bash
+paseo workspace ls --background --json
+```
+
+（若通过 Paseo MCP，调用 `list_workspaces({ includeBackground: true })`。）
+
+- **已有同路径的活跃可见 `local` 工作区**：直接复用其 `workspaceId`，不重复新建（若只存在后台工作区，不要把它当成不存在，应明确复用或请用户确认）；
+- **不存在匹配项时**：创建本地工作区（Paseo 会自动复用或创建对应 Project，无需先执行 `project create`）：
+  ```bash
+  paseo workspace create --isolation local --path "<repo-abs-path>" --title "PaseoAgent · 个人助理" --no-background --json
+  ```
+  （若通过 Paseo MCP，调用 `create_workspace({ isolation: "local", path: "<repo-abs-path>", title: "PaseoAgent · 个人助理", background: false })`。）
+
+### 6.2 置顶该工作区
+
+Paseo 支持将 workspace 置顶（daemon 持久化 `pinnedAt`），但目前仅提供 SDK/WebSocket 接口，CLI 与 Paseo MCP 尚无置顶命令：
+
+- **可调用 `@getpaseo/client` SDK 时**：直接执行 `await workspace.setPinned(true)`（对应 WebSocket `workspace.pin.set.request`）完成置顶；
+- **仅使用 CLI 或 MCP 时**：使用清晰的标题（如 `PaseoAgent · 个人助理`），并在最终汇报中提醒用户在 Paseo 侧栏右键该工作区点击 **Pin workspace** 置顶。
+
+### 6.3 在该工作区创建预设好模型的“个人助理”标签页
+
+默认使用用户指定的 **`Linguist`** 模型配置作为个人助理（除非用户另行指定）。即使当前执行安装的 AI 已经位于该工作区，也建议新建一个干净的“个人助理”标签页，确保它直接带入刚刚开启的 Paseo Tools 与技能：
+
+- **首选：通过 `@getpaseo/client` SDK（零多余回合，配置最完整）**
+  使用普通客户端（不传 `parent`）调用 `workspace.agents.create`，**省略 `prompt` 与附件**，即可直接创建独立的空闲待命标签页：
+  ```ts
+  await workspace.agents.create({
+    title: "个人助理",
+    config: {
+      provider: "<linguist-provider>/<linguist-model>",
+      modeId: "<linguist-mode-id>",
+      thinkingOptionId: "<linguist-thinking-option-id>",
+      // 仅在有额外选项时传入 options
+    },
+  });
+  ```
+- **备选 A：仅有 `paseo` CLI（安装 AI 在 Paseo 外部）**
+  `paseo run` 需要非空 prompt 且没有通用的 `options` 参数：
+  - 若助理模型无需额外 `options`，可发送一条极简就绪语创建标签页（省略无值的可选参数）：
+    ```bash
+    paseo run --workspace "<workspaceId>" --title "个人助理" --provider "<linguist-provider>/<linguist-model>" --mode "<linguist-mode-id>" --thinking "<linguist-thinking-option-id>" --no-wait --json "只回复「个人助理已就绪，请直接发需求」。不要调用工具、修改文件或启动其他 Agent。"
+    ```
+  - 若助理模型必须依赖额外 `options`，不要静默丢弃选项；跳过自动建标签，直接打开工作区并在汇报中提示用户新建标签时选好配置。
+- **备选 B：通过 Paseo MCP（安装 AI 在 Paseo 内部且未走 SDK）**
+  调用 `create_agent`（传入 `workspaceId`、`title: "个人助理"`、`provider: "<linguist-provider>/<linguist-model>"`、`settings: { modeId, thinkingOptionId, features: options }` 以及上述极简就绪语）。**注意**：从 Agent 内通过 MCP 创建的会话默认会挂载为当前安装 Agent 的子 Agent，创建完成后执行 `paseo agent detach "<agentId>"` 将其转为独立个人助理。
+
+### 6.4 打开对话并明确指引用户开始使用
+
+1. **自动定位到对话页**：拿到 `agentId` 后，如运行在本地图形桌面环境，执行以下命令直接唤起并切到该助理标签页（仅建了工作区、未建 Agent 时可用 `paseo "<repo-abs-path>"`）：
+   ```bash
+   paseo agent open "<agentId>"
+   ```
+2. **输出清晰的上手提醒**：汇报配置结果时，明确告知用户工作区名称（`PaseoAgent · 个人助理`）、标签名称（`个人助理`）以及直达链接 `paseo://h/<serverId>/agent/<agentId>`（便于无桌面或远程环境定位）；如果本轮未通过 SDK 自动置顶，提醒用户在侧栏点击 **Pin workspace**；最后提示用户直接切进该标签页发送需求即可开始使用。
